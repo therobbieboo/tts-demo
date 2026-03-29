@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>語音合成 Demo</title>
+  <title>語音對話 Demo</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -15,7 +15,9 @@
       color: #eee;
       min-height: 100vh;
     }
-    h1 { color: #00d4ff; text-align: center; margin-bottom: 30px; }
+    h1 { color: #00d4ff; text-align: center; margin-bottom: 10px; }
+    .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 14px; }
+    
     .card {
       background: #16213e;
       border-radius: 16px;
@@ -23,325 +25,398 @@
       margin-bottom: 20px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
-    label { display: block; margin-bottom: 8px; color: #aaa; font-size: 14px; }
-    textarea {
-      width: 100%;
-      height: 120px;
-      padding: 14px;
-      border: 1px solid #333;
-      border-radius: 10px;
-      background: #0f3460;
-      color: #fff;
-      font-size: 16px;
-      resize: vertical;
-      outline: none;
-    }
-    textarea:focus { border-color: #00d4ff; }
     
-    .provider-tabs {
-      display: flex;
-      gap: 8px;
+    .chat-container {
+      height: 300px;
+      overflow-y: auto;
+      padding: 16px;
+      background: #0f3460;
+      border-radius: 12px;
       margin-bottom: 16px;
     }
-    .provider-tab {
-      flex: 1;
-      padding: 12px;
-      border: 1px solid #333;
-      border-radius: 10px;
-      background: #0f3460;
-      color: #aaa;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: bold;
+    
+    .message {
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      max-width: 85%;
+      word-wrap: break-word;
+    }
+    .message.user {
+      background: #00d4ff20;
+      color: #00d4ff;
+      margin-left: auto;
+    }
+    .message.ai {
+      background: #16213e;
+      color: #fff;
+    }
+    .message.system {
+      background: #ff6b6b20;
+      color: #ff6b6b;
+      font-size: 12px;
       text-align: center;
-      transition: all 0.2s;
     }
-    .provider-tab:hover { border-color: #00d4ff; color: #fff; }
-    .provider-tab.selected { border-color: #00d4ff; background: #00d4ff20; color: #00d4ff; }
     
-    .voice-section { display: none; }
-    .voice-section.active { display: block; }
-    
-    .voice-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-top: 10px;
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
     }
-    .voice-btn {
-      padding: 10px;
-      border: 1px solid #333;
-      border-radius: 8px;
+    
+    .record-btn {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 3px solid #00d4ff;
       background: #0f3460;
-      color: #aaa;
+      color: #00d4ff;
+      font-size: 24px;
       cursor: pointer;
-      font-size: 13px;
       transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .voice-btn:hover { border-color: #00d4ff; color: #fff; }
-    .voice-btn.selected { border-color: #00d4ff; background: #00d4ff20; color: #00d4ff; }
+    .record-btn:hover { background: #00d4ff20; }
+    .record-btn.recording {
+      background: #ff4444;
+      border-color: #ff4444;
+      color: #fff;
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
     
-    input[type="text"] {
-      width: 100%;
-      padding: 12px;
+    .text-input {
+      flex: 1;
+      padding: 14px;
       border: 1px solid #333;
-      border-radius: 10px;
+      border-radius: 12px;
       background: #0f3460;
       color: #fff;
       font-size: 16px;
       outline: none;
-      margin-top: 10px;
     }
-    input:focus { border-color: #00d4ff; }
+    .text-input:focus { border-color: #00d4ff; }
     
-    .warning {
-      background: #ff6b6b20;
-      border: 1px solid #ff6b6b;
-      border-radius: 8px;
-      padding: 12px;
-      margin-top: 12px;
-      font-size: 12px;
-      color: #ff6b6b;
-    }
-    
-    button {
-      width: 100%;
-      padding: 16px;
+    .send-btn {
+      padding: 14px 24px;
       border: none;
       border-radius: 12px;
-      background: linear-gradient(135deg, #00d4ff, #0099cc);
+      background: #00d4ff;
       color: #fff;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: bold;
       cursor: pointer;
-      transition: transform 0.1s, opacity 0.2s;
-      margin-top: 16px;
     }
-    button:hover { opacity: 0.9; }
-    button:active { transform: scale(0.98); }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .send-btn:hover { opacity: 0.9; }
+    .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     
     .status {
       text-align: center;
-      padding: 12px;
+      padding: 10px;
       border-radius: 8px;
-      margin-top: 16px;
-      display: none;
+      margin-top: 12px;
       font-size: 14px;
+      display: none;
     }
     .status.loading { display: block; background: #00d4ff20; color: #00d4ff; }
     .status.error { display: block; background: #ff444420; color: #ff6666; }
     .status.success { display: block; background: #44ff4420; color: #66ff66; }
     
-    audio { width: 100%; margin-top: 16px; display: none; }
-    .info { font-size: 12px; color: #666; margin-top: 8px; text-align: center; }
+    .settings {
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      margin-top: 16px;
+    }
+    .settings input {
+      background: #0f3460;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 6px 10px;
+      color: #fff;
+      width: 200px;
+    }
+    .settings label { margin-left: 10px; }
+    
+    .api-section {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .api-section input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #0f3460;
+      color: #fff;
+      font-size: 14px;
+    }
+    
+    audio.response-audio {
+      width: 100%;
+      margin-top: 8px;
+      display: none;
+    }
   </style>
 </head>
 <body>
-  <h1>🔊 語音合成 Demo</h1>
+  <h1>🎙️ 語音對話</h1>
+  <p class="subtitle">語音輸入 → AI 回覆 → 語音輸出</p>
   
   <div class="card">
-    <label>輸入文字</label>
-    <textarea id="text" placeholder="在這裡輸入你想要轉換語音的文字...">你好！這是一個語音合成測試。</textarea>
+    <div class="api-section">
+      <input type="text" id="backendUrl" placeholder="後端 URL" value="https://voice-chat-backend-production.up.railway.app">
+    </div>
+    <div class="api-section">
+      <input type="text" id="apiKey" placeholder="OpenAI 或 MiniMax API Key">
+    </div>
+    
+    <div class="chat-container" id="chatContainer">
+      <div class="message system">系統就緒，請輸入 API Key 開始對話</div>
+    </div>
+    
+    <div class="controls">
+      <button class="record-btn" id="recordBtn" onclick="toggleRecording()">🎤</button>
+      <input type="text" class="text-input" id="textInput" placeholder="或直接輸入文字..." onkeypress="handleKeyPress(event)">
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">發送</button>
+    </div>
+    
+    <div id="status" class="status"></div>
+    <audio id="responseAudio" class="response-audio" controls></audio>
   </div>
-
-  <div class="card">
-    <label>選擇提供商</label>
-    <div class="provider-tabs">
-      <button class="provider-tab selected" data-provider="openai">OpenAI</button>
-      <button class="provider-tab" data-provider="minimax">MiniMax</button>
-    </div>
-    
-    <div id="openai-voices" class="voice-section active">
-      <label>選擇語音 (OpenAI)</label>
-      <div class="voice-grid">
-        <button class="voice-btn selected" data-voice="alloy">Alloy</button>
-        <button class="voice-btn" data-voice="echo">Echo</button>
-        <button class="voice-btn" data-voice="fable">Fable</button>
-        <button class="voice-btn" data-voice="onyx">Onyx</button>
-        <button class="voice-btn" data-voice="nova">Nova</button>
-        <button class="voice-btn" data-voice="shimmer">Shimmer</button>
-      </div>
-    </div>
-    
-    <div id="minimax-voices" class="voice-section">
-      <label>選擇語音 (MiniMax)</label>
-      <div class="voice-grid">
-        <button class="voice-btn selected" data-voice="Wise_Woman">Wise Woman</button>
-        <button class="voice-btn" data-voice="Friendly_Person">Friendly Person</button>
-        <button class="voice-btn" data-voice="Inspirational_girl">Inspirational Girl</button>
-        <button class="voice-btn" data-voice="Deep_Voice_Man">Deep Voice Man</button>
-        <button class="voice-btn" data-voice="Calm_Woman">Calm Woman</button>
-        <button class="voice-btn" data-voice="Casual_Guy">Casual Guy</button>
-        <button class="voice-btn" data-voice="Lively_Girl">Lively Girl</button>
-        <button class="voice-btn" data-voice="Patient_Man">Patient Man</button>
-        <button class="voice-btn" data-voice="Young_Knight">Young Knight</button>
-        <button class="voice-btn" data-voice="Determined_Man">Determined Man</button>
-        <button class="voice-btn" data-voice="Lovely_Girl_2">Lovely Girl 2</button>
-        <button class="voice-btn" data-voice="Sweet_Girl_2">Sweet Girl 2</button>
-      </div>
-    </div>
-    
-    <input type="text" id="apiKey" placeholder="API Key（必填）">
-    <div class="warning">⚠️ API Key 會存在瀏覽器本地，端必須你自己保管好</div>
-  </div>
-
-  <button id="speak" onclick="speak()">▶ 生成語音</button>
   
-  <div id="status" class="status"></div>
-  <audio id="audio" controls></audio>
+  <div class="settings">
+    <label>提供商：</label>
+    <select id="provider" onchange="updateVoices()">
+      <option value="openai">OpenAI</option>
+      <option value="minimax">MiniMax</option>
+    </select>
+    <label>語音：</label>
+    <select id="voice">
+      <option value="alloy">Alloy</option>
+      <option value="nova">Nova</option>
+      <option value="echo">Echo</option>
+    </select>
+  </div>
 
   <script>
-    let selectedProvider = 'openai';
-    let selectedVoice = 'alloy';
+    let isRecording = false;
+    let mediaRecorder = null;
+    let audioChunks = [];
     
-    // Provider tab switching
-    document.querySelectorAll('.provider-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.provider-tab').forEach(t => t.classList.remove('selected'));
-        tab.classList.add('selected');
-        selectedProvider = tab.dataset.provider;
-        
-        document.querySelectorAll('.voice-section').forEach(s => s.classList.remove('active'));
-        if (selectedProvider === 'openai') {
-          document.getElementById('openai-voices').classList.add('active');
-          selectedVoice = 'alloy';
-          updateOpenAIVoices();
-        } else {
-          document.getElementById('minimax-voices').classList.add('active');
-          selectedVoice = 'Wise_Woman';
-          updateMinimaxVoices();
-        }
-      });
-    });
+    const minimaxVoices = ['Wise_Woman', 'Friendly_Person', 'Deep_Voice_Man', 'Calm_Woman'];
     
-    function updateOpenAIVoices() {
-      document.querySelectorAll('#openai-voices .voice-btn').forEach(btn => {
-        btn.classList.remove('selected');
-        if (btn.dataset.voice === 'alloy') btn.classList.add('selected');
-      });
+    function updateVoices() {
+      const provider = document.getElementById('provider').value;
+      const voiceSelect = document.getElementById('voice');
+      
+      if (provider === 'minimax') {
+        voiceSelect.innerHTML = minimaxVoices.map(v => `<option value="${v}">${v.replace(/_/g, ' ')}</option>`).join('');
+      } else {
+        voiceSelect.innerHTML = `
+          <option value="alloy">Alloy</option>
+          <option value="nova">Nova</option>
+          <option value="echo">Echo</option>
+          <option value="fable">Fable</option>
+          <option value="onyx">Onyx</option>
+          <option value="shimmer">Shimmer</option>
+        `;
+      }
     }
     
-    function updateMinimaxVoices() {
-      document.querySelectorAll('#minimax-voices .voice-btn').forEach(btn => {
-        btn.classList.remove('selected');
-        if (btn.dataset.voice === 'Wise_Woman') btn.classList.add('selected');
-      });
+    async function toggleRecording() {
+      if (isRecording) {
+        stopRecording();
+      } else {
+        await startRecording();
+      }
     }
     
-    // Voice selection
-    document.querySelectorAll('.voice-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const section = btn.closest('.voice-section');
-        section.querySelectorAll('.voice-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        selectedVoice = btn.dataset.voice;
-      });
-    });
-
-    async function speak() {
-      const text = document.getElementById('text').value.trim();
-      const apiKey = document.getElementById('apiKey').value.trim();
-      
-      if (!text) { showStatus('請輸入文字', 'error'); return; }
-      if (!apiKey) { showStatus('請輸入 API Key', 'error'); return; }
-
-      const btn = document.getElementById('speak');
-      const status = document.getElementById('status');
-      const audio = document.getElementById('audio');
-      
-      btn.disabled = true;
-      showStatus('生成中...', 'loading');
-      audio.style.display = 'none';
-
+    async function startRecording() {
       try {
-        let audioBlob;
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+        audioChunks = [];
         
-        if (selectedProvider === 'minimax') {
-          // MiniMax TTS
-          const response = await fetch('https://api.minimax.io/v1/t2a_v2', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-              model: 'speech-02-hd',
-              text,
-              stream: false,
-              voice_setting: {
-                voice_id: selectedVoice
-              },
-              audio_setting: {
-                sample_rate: 32000,
-                format: 'mp3'
-              }
-            })
-          });
-
-          if (!response.ok) {
-            const err = await response.json().catch(() => ({}));
-            throw new Error(err.base_resp?.status_msg || 'MiniMax API 錯誤');
-          }
-
-          const data = await response.json();
-          if (data.base_resp?.status_code !== 0) {
-            throw new Error(data.base_resp?.status_msg || 'MiniMax API 錯誤');
-          }
+        mediaRecorder.ondataavailable = event => {
+          audioChunks.push(event.data);
+        };
+        
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          const reader = new FileReader();
+          reader.onload = () => {
+            const base64 = reader.result.split(',')[1];
+            sendAudio(base64);
+          };
+          reader.readAsDataURL(audioBlob);
           
-          // MiniMax returns audio as HEX string
-          const audioBuffer = hexToArrayBuffer(data.data.audio);
-          audioBlob = new Blob([audioBuffer], { type: 'audio/mpeg' });
-          
-        } else {
-          // OpenAI TTS
-          const response = await fetch('https://api.openai.com/v1/audio/speech', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-              model: 'gpt-4o-mini-tts',
-              voice: selectedVoice,
-              input: text,
-              response_format: 'mp3'
-            })
-          });
-
-          if (!response.ok) {
-            const err = await response.json().catch(() => ({}));
-            throw new Error(err.error?.message || 'OpenAI API 錯誤');
-          }
-
-          audioBlob = await response.blob();
+          stream.getTracks().forEach(track => track.stop());
+        };
+        
+        mediaRecorder.start();
+        isRecording = true;
+        document.getElementById('recordBtn').classList.add('recording');
+        document.getElementById('recordBtn').textContent = '⏹';
+        
+      } catch (error) {
+        showStatus('無法訪問麥克風: ' + error.message, 'error');
+      }
+    }
+    
+    function stopRecording() {
+      if (mediaRecorder && isRecording) {
+        mediaRecorder.stop();
+        isRecording = false;
+        document.getElementById('recordBtn').classList.remove('recording');
+        document.getElementById('recordBtn').textContent = '🎤';
+      }
+    }
+    
+    function handleKeyPress(event) {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
+    }
+    
+    async function sendMessage() {
+      const text = document.getElementById('textInput').value.trim();
+      const backendUrl = document.getElementById('backendUrl').value.trim();
+      
+      if (!backendUrl) {
+        showStatus('請輸入後端 URL', 'error');
+        return;
+      }
+      
+      if (!text) {
+        showStatus('請輸入文字', 'error');
+        return;
+      }
+      
+      addMessage('user', text);
+      document.getElementById('textInput').value = '';
+      
+      await chat(text, backendUrl);
+    }
+    
+    async function sendAudio(base64) {
+      const backendUrl = document.getElementById('backendUrl').value.trim();
+      
+      if (!backendUrl) {
+        showStatus('請輸入後端 URL', 'error');
+        return;
+      }
+      
+      showStatus('辨識中...', 'loading');
+      
+      try {
+        const response = await fetch(backendUrl + '/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            audio: base64,
+            provider: document.getElementById('provider').value
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+          showStatus(data.error, 'error');
+          return;
         }
-
-        const url = URL.createObjectURL(audioBlob);
-        audio.src = url;
-        audio.style.display = 'block';
-        showStatus('成功！', 'success');
-        audio.play().catch(() => {});
         
-      } catch (e) {
-        showStatus(e.message, 'error');
-      } finally {
-        btn.disabled = false;
+        // Show transcription
+        addMessage('user', `🎤 ${data.transcription}`);
+        
+        // Show AI response
+        addMessage('ai', data.response);
+        
+        // Play audio response
+        if (data.audio) {
+          const audio = document.getElementById('responseAudio');
+          audio.src = 'data:audio/mp3;base64,' + data.audio;
+          audio.style.display = 'block';
+          audio.play().catch(() => {});
+        }
+        
+        showStatus('完成', 'success');
+        
+      } catch (error) {
+        showStatus('錯誤: ' + error.message, 'error');
       }
     }
-
-    function hexToArrayBuffer(hex) {
-      const bytes = new Uint8Array(hex.length / 2);
-      for (let i = 0; i < hex.length; i += 2) {
-        bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+    
+    async function chat(text, backendUrl) {
+      showStatus('處理中...', 'loading');
+      
+      try {
+        const response = await fetch(backendUrl + '/text-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+          showStatus(data.error, 'error');
+          return;
+        }
+        
+        addMessage('ai', data.response);
+        
+        // Also convert to speech
+        showStatus('生成語音...', 'loading');
+        
+        const ttsResponse = await fetch(backendUrl + '/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            text: data.response,
+            provider: document.getElementById('provider').value,
+            voice: document.getElementById('voice').value
+          })
+        });
+        
+        const ttsData = await ttsResponse.json();
+        
+        if (ttsData.audio) {
+          const audio = document.getElementById('responseAudio');
+          audio.src = 'data:audio/mp3;base64,' + ttsData.audio;
+          audio.style.display = 'block';
+          audio.play().catch(() => {});
+        }
+        
+        showStatus('完成', 'success');
+        
+      } catch (error) {
+        showStatus('錯誤: ' + error.message, 'error');
       }
-      return bytes.buffer;
     }
-
+    
+    function addMessage(type, text) {
+      const container = document.getElementById('chatContainer');
+      const div = document.createElement('div');
+      div.className = 'message ' + type;
+      div.textContent = text;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+    
     function showStatus(msg, type) {
       const el = document.getElementById('status');
       el.textContent = msg;
       el.className = 'status ' + type;
+      if (type !== 'loading') {
+        setTimeout(() => { el.style.display = 'none'; }, 3000);
+      }
     }
   </script>
 </body>
